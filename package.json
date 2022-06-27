@@ -1,0 +1,17 @@
+{
+  "name": "dice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jssoup": "^0.0.15",
+    "selenium-webdriver": "^4.2.0",
+    "sorted-btree": "^1.8.0"
+  }
+}
