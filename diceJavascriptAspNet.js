@@ -49,8 +49,8 @@ function ln() {
     return frameRE.exec(stack.shift())[1];
 }
 
-(async function example(along = 'RUBY|ROR',
-                        search = 'ASP\\s*\\.net|node|JavaScript|TypeScript|React|Angular|jquery|\\sJS\\s|\\sVue\\s') {
+(async function example(along = 'ASP\\s*\\.net',
+                        search = '\\sRuby\\s|\\sROR\\s|python|django|\\sNode\\s|JavaScript|TypeScript|React|Angular|jquery|\\sJS\\s|\\sVue\\s') {
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
     // console.log(typeof(BTree))
