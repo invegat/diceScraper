@@ -49,8 +49,8 @@ function ln() {
     return frameRE.exec(stack.shift())[1];
 }
 
-(async function example(along = 'ASP\\s*\\.net',
-                        search = '\\sRuby\\s|\\sROR\\s|python|django|\\sNode\\s|JavaScript|TypeScript|React|Angular|jquery|\\sJS\\s|\\sVue\\s') {
+(async function example(along = 'Amazon Web Services|AWS',
+                        search = 'Python') {
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
     // console.log(typeof(BTree))
@@ -93,6 +93,7 @@ function ln() {
     let driver = null;
     let loop = 0
     let lastPage = 0;
+    let dice = JSON.parse(fs.readFileSync("./dice.json").toString());
     try {
         while (true) {
             try {
@@ -113,9 +114,9 @@ function ln() {
                 let tabWindow = await driver.getWindowHandle();
                 await driver.switchTo().window(originalWindow);
                 try {
-                    await driver.findElement(By.id('email')).sendKeys('mark.c.oliver@gmail.com', Key.TAB);
+                    await driver.findElement(By.id('email')).sendKeys(dice.email, Key.TAB);
                     await sleep(1000);
-                    await driver.findElement(By.id('password')).sendKeys('Mco75271', Key.TAB);
+                    await driver.findElement(By.id('password')).sendKeys(dice.password, Key.TAB);
                     await sleep(1000);
                     await driver.findElement(By.xpath("//button[@type='submit']")).click();
                     await sleep(1000);
@@ -130,7 +131,7 @@ function ln() {
                     search.replaceAll("\\s*","").replaceAll("\\s","").replaceAll("\\.", ".").
                                 replaceAll("|", " or "));
                     await sleep(1000);
-                    await driver.findElement(By.id('google-location-search')).sendKeys("Miami, FL 33199, USA", Key.TAB);
+                    await driver.findElement(By.id('google-location-search')).sendKeys(dice.address, Key.TAB);
                     await sleep(1000);
                     await driver.findElement(By.id('submitSearch-button')).click();
                     await sleep(3000);
