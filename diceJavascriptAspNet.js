@@ -50,7 +50,8 @@ function ln() {
 }
 
 (async function example(along = 'Amazon Web Services|AWS',
-                        search = 'Python') {
+                        regexSearch = 'Python|data\sscience',  // separate with |
+                        diceSearch = 'Python and data science') {
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
     // console.log(typeof(BTree))
@@ -60,7 +61,7 @@ function ln() {
     const browsers = [Browser.FIREFOX]
     let browserIndex = 0;
     let map = new Map([['I', 0], ['J',0]]);
-    for (const s of search.split('|')) {
+    for (const s of regexSearch.split('|')) {
         map.set(s.toLowerCase().replaceAll("\\s*","").replaceAll("\\s","").replaceAll("\\.", "."), 0);
     }
     let I = 0;
@@ -86,7 +87,7 @@ function ln() {
 
     let countSpan = undefined;
     let myRe = /((\d+,)?\d+)/
-    let patternSearch = new RegExp(`(${search})`, 'ig')
+    let patternSearch = new RegExp(`(${regexSearch})`, 'ig')
     let patternAlong = new RegExp(`(${along})`, 'ig')
     let pageCountStr = "X";
     let pageCount = 0;
@@ -127,9 +128,9 @@ function ln() {
                     }
                     await sleep(1000);
                     await driver.wait(until.elementLocated(By.id('typeaheadInput')), 10000).sendKeys(
-                        // search.replaceAll("|", " or ").replaceAll('\\s', ''));
-                    search.replaceAll("\\s*","").replaceAll("\\s","").replaceAll("\\.", ".").
-                                replaceAll("|", " or "));
+                    // regexSearch.replaceAll("\\s*","").replaceAll("\\s","").replaceAll("\\.", ".").
+                    //             replaceAll("|", " or "));
+                        diceSearch);
                     await sleep(1000);
                     await driver.findElement(By.id('google-location-search')).sendKeys(dice.address, Key.TAB);
                     await sleep(1000);
@@ -459,7 +460,7 @@ function ln() {
         fs.writeSync(fd, buffer, 0, buffer.length, 0);
         fs.close(fd)
         await driver.quit().then(() => {
-            console.log(`quit ${search}: ${searchCount}   ${along}: ${alongCount}`)
+            console.log(`quit ${regexSearch}: ${searchCount}   ${along}: ${alongCount}`)
             for (const key of map.keys()) {
                 process.stdout.write(`${key}: ${map.get(key)}  `);
             }
