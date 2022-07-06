@@ -48,9 +48,21 @@ function ln() {
     } while (!frameRE.exec(frame) && stack.length);
     return frameRE.exec(stack.shift())[1];
 }
+function save(map, mySet, name, searchCount, alongCount) {
+    map.set('searchCount', searchCount);
+    map.set('alongCount', alongCount);
+    let fd = fs.openSync(`./diceSet.${name}.json`, 'w+');
+    let buffer = Buffer.from(JSON.stringify(Array.from(mySet)));
+    fs.writeSync(fd, buffer, 0, buffer.length, 0);
+    fs.close(fd);
+    fd = fs.openSync(`./diceCounters.${name}.json`, 'w+');
+    buffer = Buffer.from(JSON.stringify(Array.from(map.entries())));
+    fs.writeSync(fd, buffer, 0, buffer.length, 0);
+    fs.close(fd)
+}
 
-(async function example(along = 'Amazon Web Services|AWS',
-                        regexSearch = 'Python|data\sscience',  // separate with |
+(async function example(along = 'Amazon Web Services|\\saws\\s',
+                        regexSearch = 'Python|data\\sscience',  // separate with |
                         diceSearch = 'Python and data science') {
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
@@ -58,18 +70,23 @@ function ln() {
     // JSON.parse(fs.readFileSync("./diceSet.json").toString())
     // console.log(`lineNumber ${ln()}`)
     // const browsers = [Browser.CHROME, Browser.EDGE, Browser.FIREFOX];
+    const letterColon = '꞉'
+    const pipe = '▏'
+    const name = `${along.replaceAll(' ', '.').replaceAll('|', pipe). 
+                    replaceAll('\\s', '').replaceAll('?', '')}꞉` +
+                   `${diceSearch.replaceAll(' ', '.')}`;
     const browsers = [Browser.FIREFOX]
     let browserIndex = 0;
     let map = new Map([['I', 0], ['J',0]]);
     for (const s of regexSearch.split('|')) {
-        map.set(s.toLowerCase().replaceAll("\\s*","").replaceAll("\\s","").replaceAll("\\.", "."), 0);
+        map.set(s.toLowerCase().replaceAll("\\s*","").replaceAll("\\s"," ").replaceAll("\\.", "."), 0);
     }
     let I = 0;
     let J = 0;
     let searchCount = 0;
     let alongCount = 0;
     try {
-        map = new Map(JSON.parse(fs.readFileSync("./diceCounters.json").toString()));
+        map = new Map(JSON.parse(fs.readFileSync(`./diceCounters.${name}.json`).toString()));
         I = map.get('I');
         J = map.get('J');
         searchCount  = map.get('searchCount');
@@ -80,7 +97,7 @@ function ln() {
     }
     let mySet = new Set();
     try {
-        mySet = new Set(JSON.parse(fs.readFileSync("./diceSet.json").toString()));
+        mySet = new Set(JSON.parse(fs.readFileSync(`./diceSet.${name}.json`).toString()));
     } catch (e) {
         console.log(e.message);
     }
@@ -431,16 +448,7 @@ function ln() {
                 } // else use old I & J
                 map.set('I', I);
                 map.set('J', J);
-                map.set('searchCount', searchCount);
-                map.set('alongCount', alongCount);
-                let fd = fs.openSync('./diceSet.json', 'w+');
-                let buffer = Buffer.from(JSON.stringify(Array.from(mySet)));
-                fs.writeSync(fd, buffer, 0, buffer.length, 0);
-                fs.close(fd);
-                fd = fs.openSync('./diceCounters.json', 'w+');
-                buffer = Buffer.from(JSON.stringify(Array.from(map.entries())));
-                fs.writeSync(fd, buffer, 0, buffer.length, 0);
-                fs.close(fd)
+                save(map, mySet, name, searchCount, alongCount)
                 // break;
 
             }
@@ -449,16 +457,7 @@ function ln() {
     } finally {
         map.set('I', pageCount);
         map.set('J', lastPage);
-        map.set('searchCount', searchCount);
-        map.set('alongCount', alongCount);
-        let fd = fs.openSync('./diceSet.json', 'w+');
-        let buffer = Buffer.from(JSON.stringify(Array.from(mySet)));
-        fs.writeSync(fd, buffer, 0, buffer.length, 0);
-        fs.close(fd);
-        fd = fs.openSync('./diceCounters.json', 'w+');
-        buffer = Buffer.from(JSON.stringify(Array.from(map.entries())));
-        fs.writeSync(fd, buffer, 0, buffer.length, 0);
-        fs.close(fd)
+        save(map, mySet, name, searchCount, alongCount);
         await driver.quit().then(() => {
             console.log(`quit ${regexSearch}: ${searchCount}   ${along}: ${alongCount}`)
             for (const key of map.keys()) {
