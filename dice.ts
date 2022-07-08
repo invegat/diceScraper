@@ -1,30 +1,13 @@
+import {Driver} from "selenium-webdriver/firefox";
 const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
 const {Actions} = require("selenium-webdriver/lib/input");
 const JSSoup = require('jssoup').default;
 // const btree = require("./btree.js");
-// const crypto = require('crypto')
-const crypto = require('crypto').webcrypto;
-const BTree_ = require('sorted-btree')
 const fs = require('fs');
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
-function getHash(str, algo = "SHA-256") {
-    let strBuf = new TextEncoder().encode(str);
-    return crypto.subtle.digest(algo, strBuf)
-        .then(hash => {
-            // window.hash = hash;
-            // here hash is an arrayBuffer,
-            // so we'll connvert it to its hex version
-            let result = '';
-            const view = new DataView(hash);
-            for (let i = 0; i < hash.byteLength; i += 4) {
-                result += ('00000000' + view.getUint32(i).toString(16)).slice(-8);
-            }
-            return result;
-        });
+function sleep(m: number) {
+    return new Promise(resolve => setTimeout(resolve, m));
 }
 
 function ln() {
@@ -34,10 +17,12 @@ function ln() {
         // property is undefined.
         throw e;
     } catch (e) {
+        // @ts-ignore
         if (!e.stack) {
             return 0; // IE < 10, likely
         }
     }
+    // @ts-ignore
     const stack = e.stack.toString().split(/\r\n|\n/);
     // We want our caller's frame. It's index into |stack| depends on the
     // browser and browser version, so we need to search for the second frame:
@@ -45,10 +30,13 @@ function ln() {
     let frame = null;
     do {
         frame = stack.shift();
+        // @ts-ignore
     } while (!frameRE.exec(frame) && stack.length);
+    // @ts-ignore
     return frameRE.exec(stack.shift())[1];
 }
-function save(map, mySet, name, searchCount, alongCount) {
+
+function save(map: Map<string, number>, mySet: Iterable<string> | ArrayLike<string>, name: string, searchCount: number, alongCount: number) {
     map.set('searchCount', searchCount);
     map.set('alongCount', alongCount);
     let fd = fs.openSync(`./diceSet.${name}.json`, 'w+');
@@ -61,61 +49,89 @@ function save(map, mySet, name, searchCount, alongCount) {
     fs.close(fd)
 }
 
-(async function example(along = 'Amazon Web Services|\\saws\\s',
-                        regexSearch = 'Python|data\\sscience',  // separate with |
-                        diceSearch = 'Python and data science') {
+async function nextPage(driver:Driver) {
+    await driver.findElement(By.tagName("body")).sendKeys(Key.END);
+    // await driver.wait(until.elementLocated(By.className("page-link")), 2000);
+    // let buttonNext = await driver.findElements(By.className("page-link"))
+    // buttonNext[6].click()
+    // @ts-ignore
+    const li = await driver.wait(until.elementLocated(By.className("pagination-next")), 2000);
+    // @ts-ignore
+    const isVisible = await driver.wait(until.elementIsVisible(li), 2000);
+    await sleep(2500)
+    try {
+        await driver.executeScript("arguments[0].scrollIntoView(true);", li);
+        await driver.actions({bridge: true}).move({x: 0, y: 0, origin: li}).click(li).perform();
+    } catch (e) {
+        // @ts-ignore
+        console.log(`${ln()}  ${e.message}`)
+    }
+}
+interface ExampleObject {
+    [key: string]: any
+}
+(async function scrapeDice(along = 'redux', regexSearch = 'javascript|\\Wjs\\W|react|angular|\\Wvue\\W', // separate with |
+                           diceSearch: string = 'javascript or js or react or angular or vue') {
+
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
     // console.log(typeof(BTree))
     // JSON.parse(fs.readFileSync("./diceSet.json").toString())
     // console.log(`lineNumber ${ln()}`)
     // const browsers = [Browser.CHROME, Browser.EDGE, Browser.FIREFOX];
-    const letterColon = '꞉'
-    const pipe = '▏'
-    const name = `${along.replaceAll(' ', '.').replaceAll('|', pipe). 
-                    replaceAll('\\s', '').replaceAll('?', '')}꞉` +
-                   `${diceSearch.replaceAll(' ', '.')}`;
-    const browsers = [Browser.FIREFOX]
-    let browserIndex = 0;
-    let map = new Map([['I', 0], ['J',0]]);
+    const letterColon: string = '꞉'
+    const pipe: string = '▏'
+    const name: string = `${along.replaceAll(' ', '.').replaceAll('|', pipe).replaceAll('\\s', '').replaceAll('?', '')}꞉` +
+        `${diceSearch.replaceAll(' ', '.')}`;
+    const browsers: string[] = [Browser.FIREFOX]
+    let browserIndex: number = 0;
+    let map = new Map<string, number>([['I', 0], ['J', 0]]);
+    let keys:string[] = [...map.keys()]
+    for (let key of keys) {
+        console.log(key)
+    }
     for (const s of regexSearch.split('|')) {
-        map.set(s.toLowerCase().replaceAll("\\s*","").replaceAll("\\s"," ").replaceAll("\\.", "."), 0);
+        map.set(s.toLowerCase().replaceAll("\\s*", "").replaceAll("\\s", " ").replaceAll("\\.", "."), 0);
     }
-    let I = 0;
-    let J = 0;
-    let searchCount = 0;
-    let alongCount = 0;
+    let I: number = 0;
+    let J: number = 0;
+    let searchCount: number = 0;
+    let alongCount: number = 0;
     try {
-        map = new Map(JSON.parse(fs.readFileSync(`./diceCounters.${name}.json`).toString()));
+        map = new Map<string, number>(JSON.parse(fs.readFileSync(`./diceCounters.${name}.json`).toString()));
+        // @ts-ignore
         I = map.get('I');
+        // @ts-ignore
         J = map.get('J');
-        searchCount  = map.get('searchCount');
+        // @ts-ignore
+        searchCount = map.get('searchCount');
+        // @ts-ignore
         alongCount = map.get('alongCount');
-    }
-    catch (e) {
-       console.log(e.message);
-    }
-    let mySet = new Set();
-    try {
-        mySet = new Set(JSON.parse(fs.readFileSync(`./diceSet.${name}.json`).toString()));
     } catch (e) {
+        // @ts-ignore
+        console.log(e.message);
+    }
+    let mySet = new Set<string>();
+    try {
+        mySet = new Set<string>(JSON.parse(fs.readFileSync(`./diceSet.${name}.json`).toString()));
+    } catch (e) {
+        // @ts-ignore
         console.log(e.message);
     }
 
     let countSpan = undefined;
-    let myRe = /((\d+,)?\d+)/
-    let patternSearch = new RegExp(`(${regexSearch})`, 'ig')
-    let patternAlong = new RegExp(`(${along})`, 'ig')
-    let pageCountStr = "X";
-    let pageCount = 0;
-    let driver = null;
-    let loop = 0
-    let lastPage = 0;
-    let dice = JSON.parse(fs.readFileSync("./dice.json").toString());
+    let patternSearch: RegExp = new RegExp(`(${regexSearch})`, 'ig')
+    let patternAlong: RegExp = new RegExp(`(${along})`, 'ig')
+    let pageCountStr: string = "X";
+    let pageCount: number = 0;
+    let driver: Driver;
+    let loop: number = 0;
+    let lastPage: number = 0;
+    let dice: ExampleObject = JSON.parse(fs.readFileSync("./dice.json").toString());
     try {
         while (true) {
             try {
-                driver = await new Builder().forBrowser(browsers[browserIndex++ % browsers.length]).build();
+                driver = await new Builder().forBrowser(Browser.FIREFOX).build();
                 if (J >= 50) {
                     J -= 50;
                 } else if (I > 0) {
@@ -125,11 +141,14 @@ function save(map, mySet, name, searchCount, alongCount) {
                     I = 0
                     J = 0
                 }
-                await driver.manage().setTimeouts({pageLoad:200000});
+                await driver.manage().setTimeouts({pageLoad: 200000});
                 await driver.get('https://www.dice.com/dashboard/logout');
                 let originalWindow = await driver.getWindowHandle();
+                //
                 await driver.switchTo().newWindow('tab');
+                //
                 let tabWindow = await driver.getWindowHandle();
+                //
                 await driver.switchTo().window(originalWindow);
                 try {
                     await driver.findElement(By.id('email')).sendKeys(dice.email, Key.TAB);
@@ -145,8 +164,8 @@ function save(map, mySet, name, searchCount, alongCount) {
                     }
                     await sleep(1000);
                     await driver.wait(until.elementLocated(By.id('typeaheadInput')), 10000).sendKeys(
-                    // regexSearch.replaceAll("\\s*","").replaceAll("\\s","").replaceAll("\\.", ".").
-                    //             replaceAll("|", " or "));
+                        // regexSearch.replaceAll("\\s*","").replaceAll("\\s","").replaceAll("\\.", ".").
+                        //             replaceAll("|", " or "));
                         diceSearch);
                     await sleep(1000);
                     await driver.findElement(By.id('google-location-search')).sendKeys(dice.address, Key.TAB);
@@ -155,7 +174,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                     await sleep(3000);
                     try {
                         const cancel = await driver.wait(until.elementLocated(By.className('ng-binding')), 4000);
-                        cancel.click()
+                        await cancel.click()
                     } catch (e) {
                     }
                     await driver.findElement(By.tagName("body")).sendKeys(Key.END);
@@ -169,6 +188,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                             origin: select1
                         }).click(select1).sendKeys("1").click(select1).perform();
                     } catch (e) {
+                        // @ts-ignore
                         console.log('set 100 ' + e.message)
                         // e.message = `${ln()} i=${I}  j=${J}`
                     }
@@ -180,6 +200,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                     }
                 } catch (e) {
                     // await driver.close() // close about:blank
+                    // @ts-ignore
                     e.message = `${ln()}  i=${I}  j=${J}`;  // no i or j here
                     throw e;
 
@@ -205,7 +226,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                     pageCountStr = "585";
                 }
                 console.log(`total count ${pageCountStr}`);
-                const total = parseInt(pageCountStr.replaceAll(',', ''));
+                const total: number = parseInt(pageCountStr.replaceAll(',', ''));
                 lastPage = total % 100;
 
 
@@ -214,19 +235,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                 // I = 1;  // for testing
                 if (I > 0) {
                     for (let i = 0; i < I; i++) {
-                        await driver.findElement(By.tagName("body")).sendKeys(Key.END);
-                        // await driver.wait(until.elementLocated(By.className("page-item")), 2000);
-                        // let buttonNext = await driver.findElements(By.className("page-link"))
-                        const li = await driver.wait(until.elementLocated(By.className("pagination-next")), 2000);
-                        const isVisible = await driver.wait(until.elementIsVisible(li), 2000);
-                        await sleep(2500)
-                        try {
-                            // await driver.manage().window().scrollBy(0,li.getRect().then(r => r.y))
-                            await driver.executeScript("arguments[0].scrollIntoView(true);", li);
-                            await driver.actions({bridge: true}).move({x: 0, y: 0, origin: li}).click(li).perform();
-                        } catch (e) {
-                            console.log(`page increment failed isVisible ${isVisible}    ${ln()} i=${I}  j=${J}`);
-                        }
+                        await nextPage(driver);
                         // buttonNext[6].click()
                     }
                     // await driver.findElement(By.tagName("body")).sendKeys(Key.HOME)
@@ -240,11 +249,14 @@ function save(map, mySet, name, searchCount, alongCount) {
                     await sleep(4000)
                     let html = await driver.findElement(By.tagName('body')).getAttribute('innerHTML').then(t => t);
                     let soup = await new JSSoup(html);
-                    let links = soup.findAll('a', {class: ['card-title-link', 'bold']});
+                    let links: any = soup.findAll('a', {class: ['card-title-link', 'bold']});
                     if (links.length < 100 && (links.length !== lastPage || i < pageCount - 1)) {
-                        throw new Error(`${ln()} links.length ${links.length}  pageCount ${pageCount}   i=${i}  j=${j}`);
+                        throw new Error(`${ln()} links.length ${links.length}  pageCount ${pageCount}   i=${i} j=0`);
                     }
                     console.log(` links ${links.length}   html length ${html.length}`)
+                    if (i < pageCount - 1) {
+                        lastPage += 100 - links.length; // sometimes link.length == 101
+                    }
                     await driver.switchTo().window(tabWindow);
                     await sleep(4000)
                     let j = J
@@ -269,7 +281,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                             // console.log(`inside text ${text}   url ${url}`)
                             let urlCrash = false;
                             try {
-                                driver.getSession(s => s)
+                                await driver.getSession()
                             } catch (e) {
                                 urlCrash = true;
                             }
@@ -285,17 +297,17 @@ function save(map, mySet, name, searchCount, alongCount) {
                                 // let textDescription = el.parent().parent().getText().then(t => t);
                                 let searchFound = false;
                                 let alongFound = false;
-                                const boolMap = new Map();
+                                const boolMap = new Map<string, boolean>();
                                 for (const key of map.keys()) {
                                     boolMap.set(key, false);
                                 }
-                                let match = text.match(patternSearch)
+                                let match: string[] | null = text.match(patternSearch)
                                 if (match != null) {
                                     for (const m of match) {
                                         boolMap.set(m.trim().toLowerCase(), true);
                                     }
                                 }
-                                let tMatch = textDescription.match(patternSearch);
+                                let tMatch: string[] | null = textDescription.match(patternSearch);
                                 if (tMatch != null) {
                                     for (const m of tMatch) {
                                         boolMap.set(m.trim().toLowerCase(), true);
@@ -314,7 +326,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                                         boolMap.set(m.trim().toLowerCase(), true);
                                     }
                                 }
-                                let aMatch = textDescription.match(patternAlong);
+                                let aMatch:string[] | null = textDescription.match(patternAlong);
                                 if (aMatch != null) {
                                     for (const m of aMatch) {
                                         boolMap.set(m.trim().toLowerCase(), true);
@@ -332,6 +344,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                                     try {
                                         for (let getCount = 0; getCount < 5; getCount++) {
                                             try {
+                                                //
                                                 await driver.get(url);
                                                 break;
                                             } catch (e) {
@@ -342,6 +355,7 @@ function save(map, mySet, name, searchCount, alongCount) {
                                         }
                                         await sleep(10000)
                                     } catch (e) {
+                                        // @ts-ignore
                                         e.message = `${ln()} i=${i}  j=${j}`;
                                         throw e;
                                         // await sleep(2000)
@@ -361,29 +375,42 @@ function save(map, mySet, name, searchCount, alongCount) {
                                     try {
                                         textDescription = await driver.wait(until.elementLocated(By.css('body'))).getText().then(t => t);
                                     } catch (e) {
+                                        // @ts-ignore
                                         e.message = `${ln()} i=${i}  j=${j}`;
                                         throw e
                                     }
-                                    let sMatch = textDescription.match(patternSearch);
+                                    let sMatch:string[] | null = textDescription.match(patternSearch);
                                     if (!searchFound) {
                                         searchFound = (sMatch != null);
                                         if (searchFound) {
                                             searchCount++;
                                         }
                                     }
-                                    let aMatch = textDescription.match(patternAlong);
+                                    let aMatch:string[] | null = textDescription.match(patternAlong);
                                     if (!alongFound) {
                                         alongFound = (aMatch != null);
                                         if (alongFound) {
                                             alongCount++;
                                         }
                                     }
-                                    for (const m of (sMatch ?? []).concat(aMatch ?? [])) {
+                                    // @ts-ignore
+                                    let saMatch:string[] = [];
+                                    // @ts-ignore
+                                    if (sMatch) {
+                                        saMatch = saMatch.concat(sMatch);
+                                    }
+                                    // @ts-ignore
+                                    if (aMatch) {
+                                        saMatch = saMatch.concat(aMatch);
+                                    }
+                                    for (const m of saMatch) {
                                         boolMap.set(m.trim().toLowerCase(), true);
                                     }
                                 }
-                                for (const key of map.keys()) {
+                                let keys:string[] = [...map.keys()]
+                                for (const key of keys) {
                                     if (boolMap.get(key)) {
+                                        // @ts-ignore
                                         map.set(key, map.get(key) + 1);
                                     }
                                 }
@@ -400,23 +427,11 @@ function save(map, mySet, name, searchCount, alongCount) {
                         await sleep(2000);
                         await driver.wait(until.elementLocated(By.id('jobAlertSaveButton')), 4000)
                         if (i < pageCount - 1) {
-                            await driver.findElement(By.tagName("body")).sendKeys(Key.END);
-                            // await driver.wait(until.elementLocated(By.className("page-link")), 2000);
-                            // let buttonNext = await driver.findElements(By.className("page-link"))
-                            // buttonNext[6].click()
-                            const li = await driver.wait(until.elementLocated(By.className("pagination-next")), 2000);
-                            const isVisible = await driver.wait(until.elementIsVisible(li), 2000);
-                            await sleep(2500)
-                            try {
-                                await driver.executeScript("arguments[0].scrollIntoView(true);", li);
-                                await driver.actions({bridge: true}).move({x: 0, y: 0, origin: li}).click(li).perform();
-                            } catch (e) {
-                                console.log(`${ln()}  ${e.message}`)
-                            }
                             // await driver.wait(until.elementLocated(By.className("pagination-next")),2000).click();
-
+                            await nextPage(driver)
                         }
                     } catch (e) {
+                        // @ts-ignore
                         e.message = `$${ln()}  i=${i}  j=${j}`;
                         throw e;
 
@@ -426,10 +441,12 @@ function save(map, mySet, name, searchCount, alongCount) {
                 J = lastPage;
                 break;
             } catch (e) {
+                // @ts-ignore
                 console.log(e.message);
                 // console.log(e.trace);
                 // console.log(e.stack)
                 try {
+                    // @ts-ignore
                     await driver.quit()
                 } catch (e) {
                 }
@@ -441,7 +458,8 @@ function save(map, mySet, name, searchCount, alongCount) {
                 // originalWindow = await driver.getWindowHandle();
                 // await driver.switchTo().newWindow('tab');
                 // tabWindow = await driver.getWindowHandle();
-                let match = e.message.match(/i=(\d+)\s+j=(\d+)/)
+                // @ts-ignore
+                let match: string[] | null = e.message.match(/i=(\d+)\s+j=(\d+)/)
                 if (match != null) {
                     I = parseInt(match[1]);
                     J = parseInt(match[2]);
@@ -458,13 +476,14 @@ function save(map, mySet, name, searchCount, alongCount) {
         map.set('I', pageCount);
         map.set('J', lastPage);
         save(map, mySet, name, searchCount, alongCount);
+        // @ts-ignore
         await driver.quit().then(() => {
             console.log(`quit ${regexSearch}: ${searchCount}   ${along}: ${alongCount}`)
             for (const key of map.keys()) {
                 process.stdout.write(`${key}: ${map.get(key)}  `);
             }
             console.log();
-        // await sleep(80000)
+            // await sleep(80000)
         });
     }
 })()
