@@ -2,7 +2,6 @@ import {Driver} from "selenium-webdriver/firefox";
 const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
 const {Actions} = require("selenium-webdriver/lib/input");
 const JSSoup = require('jssoup').default;
-// const btree = require("./btree.js");
 const fs = require('fs');
 
 
@@ -39,11 +38,11 @@ function ln() {
 function save(map: Map<string, number>, mySet: Iterable<string> | ArrayLike<string>, name: string, searchCount: number, alongCount: number) {
     map.set('searchCount', searchCount);
     map.set('alongCount', alongCount);
-    let fd = fs.openSync(`./diceSet.${name}.json`, 'w+');
+    let fd = fs.openSync(`./diceSet.${name}.json`, 'w');
     let buffer = Buffer.from(JSON.stringify(Array.from(mySet)));
     fs.writeSync(fd, buffer, 0, buffer.length, 0);
     fs.close(fd);
-    fd = fs.openSync(`./diceCounters.${name}.json`, 'w+');
+    fd = fs.openSync(`./diceCounters.${name}.json`, 'w');
     buffer = Buffer.from(JSON.stringify(Array.from(map.entries())));
     fs.writeSync(fd, buffer, 0, buffer.length, 0);
     fs.close(fd)
@@ -54,15 +53,13 @@ async function nextPage(driver:Driver) {
     // await driver.wait(until.elementLocated(By.className("page-link")), 2000);
     // let buttonNext = await driver.findElements(By.className("page-link"))
     // buttonNext[6].click()
-    // @ts-ignore
     const li = await driver.wait(until.elementLocated(By.className("pagination-next")), 2000);
-    // @ts-ignore
     const isVisible = await driver.wait(until.elementIsVisible(li), 2000);
     await sleep(2500)
     try {
         await driver.executeScript("arguments[0].scrollIntoView(true);", li);
         await driver.actions({bridge: true}).move({x: 0, y: 0, origin: li}).click(li).perform();
-    } catch (e) {
+    } catch (e: unknown) {
         // @ts-ignore
         console.log(`${ln()}  ${e.message}`)
     }
@@ -70,8 +67,14 @@ async function nextPage(driver:Driver) {
 interface ExampleObject {
     [key: string]: any
 }
-(async function scrapeDice(along = 'redux', regexSearch = 'javascript|\\Wjs\\W|react|angular|\\Wvue\\W', // separate with |
-                           diceSearch: string = 'javascript or js or react or angular or vue') {
+function wordReplace(s: string, set:Set<string>) {
+    if (set.has(s.toLowerCase().substring(1, s.length-1))) {
+        return "_" + s.toLowerCase().substring(1, s.length-1) + "_"
+    }
+    return s
+}
+(async function scrapeDice(along = 'amazon web services|\\Waws\\W', regexSearch = 'node|express|asp.net', // separate with |
+                           diceSearch: string = 'node or express or asp.net') {
 
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
@@ -81,17 +84,22 @@ interface ExampleObject {
     // const browsers = [Browser.CHROME, Browser.EDGE, Browser.FIREFOX];
     const letterColon: string = '꞉'
     const pipe: string = '▏'
-    const name: string = `${along.replaceAll(' ', '.').replaceAll('|', pipe).replaceAll('\\s', '').replaceAll('?', '')}꞉` +
+    const name: string = `${along.replaceAll(' ', '.').replaceAll('|', pipe).replaceAll('\\s', '').
+        replaceAll('?', '').replaceAll("\\W", '_')}꞉` +
         `${diceSearch.replaceAll(' ', '.')}`;
-    const browsers: string[] = [Browser.FIREFOX]
-    let browserIndex: number = 0;
+    // const browsers: string[] = [Browser.FIREFOX]
+    // let browserIndex: number = 0;
     let map = new Map<string, number>([['I', 0], ['J', 0]]);
     let keys:string[] = [...map.keys()]
     for (let key of keys) {
         console.log(key)
     }
+    const wordSet = new Set<string>();
     for (const s of regexSearch.split('|')) {
-        map.set(s.toLowerCase().replaceAll("\\s*", "").replaceAll("\\s", " ").replaceAll("\\.", "."), 0);
+        if (s.substring(0,2) == "\\W" && s.substring(s.length - 2) == "\\W") {
+            wordSet.add(s.substring(2, s.length - 2))
+        }
+        map.set(s.toLowerCase().replaceAll("\\s*", "").replaceAll("\\s", " ").replaceAll("\\.", ".").replaceAll("\\w", "_"), 0);
     }
     let I: number = 0;
     let J: number = 0;
@@ -304,13 +312,13 @@ interface ExampleObject {
                                 let match: string[] | null = text.match(patternSearch)
                                 if (match != null) {
                                     for (const m of match) {
-                                        boolMap.set(m.trim().toLowerCase(), true);
+                                        boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
                                 let tMatch: string[] | null = textDescription.match(patternSearch);
                                 if (tMatch != null) {
                                     for (const m of tMatch) {
-                                        boolMap.set(m.trim().toLowerCase(), true);
+                                        boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
                                 if (match == null) {
@@ -323,13 +331,13 @@ interface ExampleObject {
                                 match = text.match(patternAlong)
                                 if (match != null) {
                                     for (const m of match) {
-                                        boolMap.set(m.trim().toLowerCase(), true);
+                                        boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
                                 let aMatch:string[] | null = textDescription.match(patternAlong);
                                 if (aMatch != null) {
                                     for (const m of aMatch) {
-                                        boolMap.set(m.trim().toLowerCase(), true);
+                                        boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
 
@@ -353,7 +361,7 @@ interface ExampleObject {
                                                 }
                                             }
                                         }
-                                        await sleep(10000)
+                                        await sleep(3500)
                                     } catch (e) {
                                         // @ts-ignore
                                         e.message = `${ln()} i=${i}  j=${j}`;
@@ -404,7 +412,7 @@ interface ExampleObject {
                                         saMatch = saMatch.concat(aMatch);
                                     }
                                     for (const m of saMatch) {
-                                        boolMap.set(m.trim().toLowerCase(), true);
+                                        boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
                                 let keys:string[] = [...map.keys()]

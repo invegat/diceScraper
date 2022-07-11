@@ -1,0 +1,35 @@
+>tsc .\dice.ts --lib es2021 --target es2021 --module commonjs
+
+
+
+117 ASP.net 91 JavaScript|TypeScript|React|Angular|jquery|\s+JS\s+|\s+Vue\s+
+
+
+University of California, Berkeley. (2021, December 22). 11 most in-demand programming languages in 2022. Berkeley Boot Camps. Retrieved June 17, 2022, from https://bootcamp.berkeley.edu/blog/most-in-demand-programming-languages/ 
+Aman Goel
+
+Goel, A. (n.d.). Best programming languages to learn in 2022 (for Job &amp; Future). Hackr.io. Retrieved June 17, 2022, from https://hackr.io/blog/best-programming-languages-to-learn 
+
+Kolakowski, N. (2019, October 14). Top 7 Programming Languages That Employers Really Want. Retrieved June 17, 2022, from https://insights.dice.com/2019/10/14/7-programming-languages-employers-want/ 
+JavaScript or TypeScript or React or Angular or jquery or JS (delimited by spaces) or Vue(delimited by spaces)
+[
+search 2290
+along 248,
+I 26,
+J 46,
+Node 903
+JavaScript 1662
+TypeScript 563
+React 1397
+Angular 1212
+jQuery 436
+Vue 64
+]
+
+node|JavaScript|TypeScript|React|Angular|jquery|\sJS\s|\sVue\s: 4041   ASP.net: 448
+        nodeCount: 1262  javaScriptCount: 2882  typeScriptCount: 685
+           reactCount: 1908  angularCount: 1798  jQueryCount 659  vueCount: 78
+
+
+(async function scrapeDice(along = 'amazon web services|\\Waws\\W', regexSearch = 'react|angular|javascript|asp.net|\\Wvue\\W|\\Wjs\\W|jquery|typescript', // separate with |
+                           diceSearch: string = 'react or angular or javascript or asp.net or vue or js') {
