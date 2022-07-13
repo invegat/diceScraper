@@ -1,4 +1,4 @@
-import {Driver} from "selenium-webdriver/firefox";
+// import {Driver} from "selenium-webdriver/firefox";
 import {Builder, Browser, By, Key, until, WebDriver} from 'selenium-webdriver';
 // import {Actions} from "selenium-webdriver/lib/input";
 import JSSoup from "jssoup";
@@ -77,8 +77,8 @@ function wordReplace(s: string, set:Set<string>) {
     }
     return s
 }
-(async function scrapeDice(along = 'amazon web services|\\Waws\\W', regexSearch = 'node|express|asp.net|python\\sflask', // separate with |
-                           diceSearch = 'node or express or asp.net or python.flask') {
+(async function scrapeDice(along = 'javascript|\\Wjs\\W|typescript|angular|react|jquery|\\Wvue\\W ', regexSearch = 'asp\\.net', // separate with |
+                           diceSearch = 'asp.net') {
 
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
@@ -154,7 +154,7 @@ function wordReplace(s: string, set:Set<string>) {
                     I = 0
                     J = 0
                 }
-                await driver.manage().setTimeouts({pageLoad: 200000});
+                await driver.manage().setTimeouts({pageLoad: 12000});
                 await driver.get('https://www.dice.com/dashboard/logout');
                 const originalWindow = await driver.getWindowHandle();
                 //
@@ -292,7 +292,7 @@ function wordReplace(s: string, set:Set<string>) {
                                 continue;
                             }
                             mySet.add(id)
-                            await sleep(3000);
+                            await sleep(1500);
                             const text = await el.getText()
                             // console.log(`inside text ${text}   url ${url}`)
                             let urlCrash = false;
@@ -369,7 +369,7 @@ function wordReplace(s: string, set:Set<string>) {
                                                 }
                                             }
                                         }
-                                        await sleep(1750)
+                                        await sleep(1000)
                                     } catch (e) {
                                         // @ts-ignore
                                         e.message = `${ln()} i=${i}  j=${j}`;
@@ -387,7 +387,7 @@ function wordReplace(s: string, set:Set<string>) {
 
                                     }
 
-                                    await sleep(2000)
+                                    await sleep(1000)
                                     try {
                                         textDescription = await driver.wait(until.elementLocated(By.css('body'))).getText().then(t => t);
                                     } catch (e) {
