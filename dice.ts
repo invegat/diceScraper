@@ -1,8 +1,9 @@
 import {Driver} from "selenium-webdriver/firefox";
-const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
-const {Actions} = require("selenium-webdriver/lib/input");
-const JSSoup = require('jssoup').default;
-const fs = require('fs');
+import {Builder, Browser, By, Key, until, WebDriver} from 'selenium-webdriver';
+// import {Actions} from "selenium-webdriver/lib/input";
+import JSSoup from "jssoup";
+
+import * as fs from 'fs';
 
 
 function sleep(m: number) {
@@ -10,7 +11,7 @@ function sleep(m: number) {
 }
 
 function ln() {
-    const e = new Error();
+    const e:Error = new Error();
     if (!e.stack) try {
         // IE requires the Error to actually be throw or else the Error's 'stack'
         // property is undefined.
@@ -21,12 +22,15 @@ function ln() {
             return 0; // IE < 10, likely
         }
     }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const stack = e.stack.toString().split(/\r\n|\n/);
     // We want our caller's frame. It's index into |stack| depends on the
     // browser and browser version, so we need to search for the second frame:
     const frameRE = /:(\d+):(?:\d+)[^\d]*$/;
-    let frame = null;
+    let frame:string | undefined
+    // @ts-ignore
+    // @ts-ignore
     do {
         frame = stack.shift();
         // @ts-ignore
@@ -48,13 +52,13 @@ function save(map: Map<string, number>, mySet: Iterable<string> | ArrayLike<stri
     fs.close(fd)
 }
 
-async function nextPage(driver:Driver) {
+async function nextPage(driver:WebDriver) {
     await driver.findElement(By.tagName("body")).sendKeys(Key.END);
     // await driver.wait(until.elementLocated(By.className("page-link")), 2000);
     // let buttonNext = await driver.findElements(By.className("page-link"))
     // buttonNext[6].click()
     const li = await driver.wait(until.elementLocated(By.className("pagination-next")), 2000);
-    const isVisible = await driver.wait(until.elementIsVisible(li), 2000);
+    await driver.wait(until.elementIsVisible(li), 2000);
     await sleep(2500)
     try {
         await driver.executeScript("arguments[0].scrollIntoView(true);", li);
@@ -65,7 +69,7 @@ async function nextPage(driver:Driver) {
     }
 }
 interface ExampleObject {
-    [key: string]: any
+    [key: string]: string
 }
 function wordReplace(s: string, set:Set<string>) {
     if (set.has(s.toLowerCase().substring(1, s.length-1))) {
@@ -73,8 +77,8 @@ function wordReplace(s: string, set:Set<string>) {
     }
     return s
 }
-(async function scrapeDice(along = 'amazon web services|\\Waws\\W', regexSearch = 'node|express|asp.net', // separate with |
-                           diceSearch: string = 'node or express or asp.net') {
+(async function scrapeDice(along = 'amazon web services|\\Waws\\W', regexSearch = 'node|express|asp.net|python\\sflask', // separate with |
+                           diceSearch = 'node or express or asp.net or python.flask') {
 
     // const tree = new BTree()
     // const BTree = BTree_.default({maxNodeSize:21});
@@ -82,16 +86,16 @@ function wordReplace(s: string, set:Set<string>) {
     // JSON.parse(fs.readFileSync("./diceSet.json").toString())
     // console.log(`lineNumber ${ln()}`)
     // const browsers = [Browser.CHROME, Browser.EDGE, Browser.FIREFOX];
-    const letterColon: string = '꞉'
-    const pipe: string = '▏'
+    // const letterColon = '꞉'
+    const pipe = '▏'
     const name: string = `${along.replaceAll(' ', '.').replaceAll('|', pipe).replaceAll('\\s', '').
         replaceAll('?', '').replaceAll("\\W", '_')}꞉` +
         `${diceSearch.replaceAll(' ', '.')}`;
     // const browsers: string[] = [Browser.FIREFOX]
     // let browserIndex: number = 0;
     let map = new Map<string, number>([['I', 0], ['J', 0]]);
-    let keys:string[] = [...map.keys()]
-    for (let key of keys) {
+    const keys:string[] = [...map.keys()]
+    for (const key of keys) {
         console.log(key)
     }
     const wordSet = new Set<string>();
@@ -101,10 +105,10 @@ function wordReplace(s: string, set:Set<string>) {
         }
         map.set(s.toLowerCase().replaceAll("\\s*", "").replaceAll("\\s", " ").replaceAll("\\.", ".").replaceAll("\\w", "_"), 0);
     }
-    let I: number = 0;
-    let J: number = 0;
-    let searchCount: number = 0;
-    let alongCount: number = 0;
+    let I = 0;
+    let J = 0;
+    let searchCount = 0;
+    let alongCount = 0;
     try {
         map = new Map<string, number>(JSON.parse(fs.readFileSync(`./diceCounters.${name}.json`).toString()));
         // @ts-ignore
@@ -128,15 +132,16 @@ function wordReplace(s: string, set:Set<string>) {
     }
 
     let countSpan = undefined;
-    let patternSearch: RegExp = new RegExp(`(${regexSearch})`, 'ig')
-    let patternAlong: RegExp = new RegExp(`(${along})`, 'ig')
-    let pageCountStr: string = "X";
-    let pageCount: number = 0;
-    let driver: Driver;
-    let loop: number = 0;
-    let lastPage: number = 0;
-    let dice: ExampleObject = JSON.parse(fs.readFileSync("./dice.json").toString());
+    const patternSearch = new RegExp(`(${regexSearch})`, 'ig')
+    const patternAlong = new RegExp(`(${along})`, 'ig')
+    let pageCountStr = "X";
+    let pageCount = 0;
+    let driver: WebDriver;
+    let loop = 0;
+    let lastPage = 0;
+    const dice: ExampleObject = JSON.parse(fs.readFileSync("./dice.json").toString());
     try {
+        // eslint-disable-next-line no-constant-condition
         while (true) {
             try {
                 driver = await new Builder().forBrowser(Browser.FIREFOX).build();
@@ -151,11 +156,11 @@ function wordReplace(s: string, set:Set<string>) {
                 }
                 await driver.manage().setTimeouts({pageLoad: 200000});
                 await driver.get('https://www.dice.com/dashboard/logout');
-                let originalWindow = await driver.getWindowHandle();
+                const originalWindow = await driver.getWindowHandle();
                 //
                 await driver.switchTo().newWindow('tab');
                 //
-                let tabWindow = await driver.getWindowHandle();
+                const tabWindow = await driver.getWindowHandle();
                 //
                 await driver.switchTo().window(originalWindow);
                 try {
@@ -167,6 +172,7 @@ function wordReplace(s: string, set:Set<string>) {
                     await sleep(1000);
                     try {
                         await driver.wait(until.elementLocated(By.className('navbar-magnifier')), 5000).click();
+                        // eslint-disable-next-line no-empty
                     } catch (e) {
 
                     }
@@ -183,6 +189,7 @@ function wordReplace(s: string, set:Set<string>) {
                     try {
                         const cancel = await driver.wait(until.elementLocated(By.className('ng-binding')), 4000);
                         await cancel.click()
+                        // eslint-disable-next-line no-empty
                     } catch (e) {
                     }
                     await driver.findElement(By.tagName("body")).sendKeys(Key.END);
@@ -202,7 +209,7 @@ function wordReplace(s: string, set:Set<string>) {
                     }
                     await sleep(7500);  // wait for page to reload
                     // const ps = await driver.findElement(By.xpath("//*[@id='pageSize_2']/option[@selected='selected']")).getText().then((t =>t));
-                    let ps = await driver.findElement(By.css("#pageSize_2>option:checked")).getText().then(t => t);
+                    const ps = await driver.findElement(By.css("#pageSize_2>option:checked")).getText().then(t => t);
                     if (ps !== '100') {
                         throw new Error(`i=${I}  j=${J}`);
                     }
@@ -255,9 +262,10 @@ function wordReplace(s: string, set:Set<string>) {
                     process.stdout.write(`${i} `)
                     await driver.wait(until.elementLocated(By.id('jobAlertSaveButton')), 4000)
                     await sleep(4000)
-                    let html = await driver.findElement(By.tagName('body')).getAttribute('innerHTML').then(t => t);
-                    let soup = await new JSSoup(html);
-                    let links: any = soup.findAll('a', {class: ['card-title-link', 'bold']});
+                    const html = await driver.findElement(By.tagName('body')).getAttribute('innerHTML').then(t => t);
+                    const soup = await new JSSoup(html);
+                    /* eslint-disable @typescript-eslint/no-explicit-any */
+                    const links: any[] = soup.findAll('a', {class: ['card-title-link', 'bold']});
                     if (links.length < 100 && (links.length !== lastPage || i < pageCount - 1)) {
                         throw new Error(`${ln()} links.length ${links.length}  pageCount ${pageCount}   i=${i} j=0`);
                     }
@@ -274,18 +282,18 @@ function wordReplace(s: string, set:Set<string>) {
                             process.stdout.write(`${key}: ${map.get(key)}  `);
                         }
                         console.log(`${i}-${j}  ${searchCount}   ${alongCount} `)
-                        let elAttr = el.attrs['class']
+                        const elAttr = el.attrs['class']
                         // console.log(`elAttr ${elAttr}`);
                         if (elAttr === "card-title-link bold") {
-                            let url = await el.attrs['href']
-                            let id = await el.attrs['id']
+                            const url = await el.attrs['href']
+                            const id = await el.attrs['id']
                             // let hash = await getHash(url).then(h => h);
                             if (mySet.has(id)) {
                                 continue;
                             }
                             mySet.add(id)
                             await sleep(3000);
-                            let text = await el.getText()
+                            const text = await el.getText()
                             // console.log(`inside text ${text}   url ${url}`)
                             let urlCrash = false;
                             try {
@@ -315,7 +323,7 @@ function wordReplace(s: string, set:Set<string>) {
                                         boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
-                                let tMatch: string[] | null = textDescription.match(patternSearch);
+                                const tMatch: string[] | null = textDescription.match(patternSearch);
                                 if (tMatch != null) {
                                     for (const m of tMatch) {
                                         boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
@@ -334,7 +342,7 @@ function wordReplace(s: string, set:Set<string>) {
                                         boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
-                                let aMatch:string[] | null = textDescription.match(patternAlong);
+                                const aMatch:string[] | null = textDescription.match(patternAlong);
                                 if (aMatch != null) {
                                     for (const m of aMatch) {
                                         boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
@@ -361,7 +369,7 @@ function wordReplace(s: string, set:Set<string>) {
                                                 }
                                             }
                                         }
-                                        await sleep(3500)
+                                        await sleep(1750)
                                     } catch (e) {
                                         // @ts-ignore
                                         e.message = `${ln()} i=${i}  j=${j}`;
@@ -387,14 +395,14 @@ function wordReplace(s: string, set:Set<string>) {
                                         e.message = `${ln()} i=${i}  j=${j}`;
                                         throw e
                                     }
-                                    let sMatch:string[] | null = textDescription.match(patternSearch);
+                                    const sMatch:string[] | null = textDescription.match(patternSearch);
                                     if (!searchFound) {
                                         searchFound = (sMatch != null);
                                         if (searchFound) {
                                             searchCount++;
                                         }
                                     }
-                                    let aMatch:string[] | null = textDescription.match(patternAlong);
+                                    const aMatch:string[] | null = textDescription.match(patternAlong);
                                     if (!alongFound) {
                                         alongFound = (aMatch != null);
                                         if (alongFound) {
@@ -415,7 +423,7 @@ function wordReplace(s: string, set:Set<string>) {
                                         boolMap.set(wordReplace(m, wordSet).toLowerCase(), true);
                                     }
                                 }
-                                let keys:string[] = [...map.keys()]
+                                const keys:string[] = [...map.keys()]
                                 for (const key of keys) {
                                     if (boolMap.get(key)) {
                                         // @ts-ignore
@@ -456,6 +464,7 @@ function wordReplace(s: string, set:Set<string>) {
                 try {
                     // @ts-ignore
                     await driver.quit()
+                    // eslint-disable-next-line no-empty
                 } catch (e) {
                 }
                 await sleep(2000)
@@ -467,7 +476,7 @@ function wordReplace(s: string, set:Set<string>) {
                 // await driver.switchTo().newWindow('tab');
                 // tabWindow = await driver.getWindowHandle();
                 // @ts-ignore
-                let match: string[] | null = e.message.match(/i=(\d+)\s+j=(\d+)/)
+                const match: string[] | null = e.message.match(/i=(\d+)\s+j=(\d+)/)
                 if (match != null) {
                     I = parseInt(match[1]);
                     J = parseInt(match[2]);
@@ -478,6 +487,7 @@ function wordReplace(s: string, set:Set<string>) {
                 // break;
 
             }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             loop++;
         }
     } finally {
