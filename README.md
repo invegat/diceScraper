@@ -14,3 +14,14 @@ The contents of diceCounters.<along>.json show the search parameters.
 
 
 the diceSet files have all the unique dice.com ids for their searches
+
+To run: 
+    npx eslint dice.ts
+    tsc .\dice.ts --lib es2021 --target es2021 --module commonjs
+and
+    support Intellij Idea TypeScript linting and running
+a jssoup.d.ts is needed in the root
+and another jssoup.d.ts is needed in
+node_modules/jssoup/dist/lib with the 
+interior "declare"s removed
+
